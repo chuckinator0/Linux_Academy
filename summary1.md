@@ -48,11 +48,44 @@ A lot of systems are read heavy, so reads that require complex joins, especially
 
 ### Asyncronism (Message Queues)
 
+Sometimes a client doesn't want to wait for a server's response before moving on to do other things. So just pop the job into a message queue and let the server read from the queue when it's ready.
 
+Kafka is a message queue, but it can also be thought of as a distributed event log that keeps different parts of a microservice architecture in sync (eventually). The event paradigm also allows us to "go back in time" and replay events.
 
 ----
 
 ### Map Reduce
+
+Map --> Shuffle --> Reduce
+
+Main idea is to take a big input, break it up into small pieces, find local solutions, then combine local solutions to find global solutions.
+
+For example, let's say you want to find the number of occurences of each word in a document. This would be a pretty simple function in Python:
+
+```python
+from collections import defaultdict
+def word_counts(document):
+    words = document.split()
+    count_dict = defaultdict(int) # { word: count}
+    for word in words:
+        count_dict[word] += 1
+    return count_dict
+```
+
+The problem occurs when the document is 3 TB and the dictionary won't fit in memory.
+
+Map phase:
+
+* break the document into smaller pieces that will fit in memory and distribute those pieces among several machines
+* run the function on each machine separately to get many local solutions. In this case, we might want a different output file for each individual word rather than a dictionary.
+
+Shuffle phase:
+
+* Move all the local solutions for a given word onto the same machine. For example, every local solution "cat", so `{"cat":5}` on machine 1, `{"cat":7}` on manchine 2 and so on, should all be moved to the same machine, say machine A (which could be a machine we've already used).
+
+Reduce phase:
+
+* Now that all the local solutions are on the same machine, they can be loaded into local memory and combine into one solution, e.g. `{"cat": 1482693}`
 
 ----
 ----
@@ -218,9 +251,13 @@ Intro to LVM (Logical Volume Manager)
   * `vgs` volume group scan
   * `lvs` logical volume scan
 
-
-
 ----
 ----
 
 ## Miscellaneous
+
+Long talked about:
+
+* CPU is always executing code or handling an interrupt
+* Unix was monolithic in that there is one memory address space, whereas Linux kernel is monolithic + modular so memory addresses can be released and reused
+* Windows 7 and vista were "micro kernels", with segmented memory address space and then translating between micro kernels when more memory is needed. This didn't work out. Linux is best of both worlds
